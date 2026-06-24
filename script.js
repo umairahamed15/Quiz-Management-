@@ -1,4 +1,4 @@
-﻿const pages = {
+const pages = {
   home: document.getElementById('homePage'),
   login: document.getElementById('loginPage'),
   register: document.getElementById('registerPage'),
@@ -26,42 +26,6 @@ const state = {
   quizTimer: null,
   quizTimeLeft: 0,
 };
-
-const users = [
-  { name: 'Demo Student', email: 'student@example.com', password: 'student123', role: 'student', results: [], joined: '2024' },
-  { name: 'Demo Admin', email: 'admin@example.com', password: 'admin123', role: 'admin' },
-];
-
-const defaultQuizzes = [
-  {
-    title: 'HTML Basics',
-    subject: 'Web Design',
-    timeLimit: 5,
-    marks: 10,
-    questions: [
-      {
-        text: 'What does HTML stand for?',
-        options: {
-          A: 'Hyper Text Markup Language',
-          B: 'Hyperlinks and Text Markup Language',
-          C: 'Home Tool Markup Language',
-          D: 'Hyper Text Makeup Language',
-        },
-        answer: 'A',
-      },
-      {
-        text: 'Which tag is used for headings?',
-        options: {
-          A: '<head>',
-          B: '<h1>',
-          C: '<title>',
-          D: '<body>',
-        },
-        answer: 'B',
-      },
-    ],
-  },
-];
 
 const elements = {
   navHomeBtn: document.getElementById('navHomeBtn'),
@@ -220,6 +184,10 @@ function showAdminResults() {
 function showQuizAttempt() {
   if (!state.currentUser) return showLogin();
   if (state.currentUser.role !== 'student') return showHome();
+  if (state.quizzes.length === 0) {
+    alert('No quizzes available.');
+    return showStudentDashboard();
+  }
   const quiz = state.quizzes[0];
   startQuiz(quiz);
 }
@@ -235,25 +203,33 @@ function showReviewPage() {
 }
 
 function logout() {
-  state.currentUser = null;
-  state.activeQuiz = null;
-  state.activeQuestionIndex = 0;
-  state.answers = [];
-  state.lastAttempt = null;
-  clearInterval(state.quizTimer);
-  showHome();
+  auth.signOut().then(() => {
+    state.currentUser = null;
+    state.activeQuiz = null;
+    state.activeQuestionIndex = 0;
+    state.answers = [];
+    state.lastAttempt = null;
+    clearInterval(state.quizTimer);
+    showHome();
+  }).catch(error => {
+    console.error('Logout error:', error);
+    showHome();
+  });
 }
 
 function renderStudentDashboard() {
+  if (!state.currentUser) return;
   const user = state.currentUser;
-  const attempted = user.results.length;
+  const attempted = user.results ? user.results.length : 0;
   const total = state.quizzes.length;
   const average = attempted ? Math.round(user.results.reduce((sum, r) => sum + r.score, 0) / attempted) : 0;
-  elements.studentNameLabel.textContent = user.name;
+  
+  elements.studentNameLabel.textContent = user.name || user.email;
   elements.totalQuizCount.textContent = total;
   elements.attemptedCount.textContent = attempted;
   elements.averageScore.textContent = `${average}%`;
   elements.recentScoresList.innerHTML = '';
+  
   if (!attempted) {
     elements.recentScoresList.innerHTML = '<li>No quiz attempts yet.</li>';
   } else {
@@ -282,27 +258,37 @@ function renderStudentResults() {
 
 function renderStudentProfile() {
   const user = state.currentUser;
-  elements.profileName.textContent = user.name;
+  elements.profileName.textContent = user.name || 'Student';
   elements.profileEmail.textContent = user.email;
-  elements.profileSince.textContent = user.joined || '2024';
+  elements.profileSince.textContent = user.createdAt ? new Date(user.createdAt).getFullYear() : '2024';
 }
 
 function renderAdminDashboard() {
-  elements.totalStudents.textContent = users.filter(u => u.role === 'student').length;
-  elements.totalQuizzes.textContent = state.quizzes.length;
-  const allResults = users.filter(u => u.role === 'student').flatMap(u => u.results || []);
-  const average = allResults.length ? Math.round(allResults.reduce((sum, r) => sum + r.score, 0) / allResults.length) : 0;
-  elements.adminAverageScore.textContent = `${average}%`;
+  loadAllStudents().then(students => {
+    elements.totalStudents.textContent = students.length;
+    elements.totalQuizzes.textContent = state.quizzes.length;
+    
+    let allResults = [];
+    students.forEach(student => {
+      if (student.results) {
+        allResults = allResults.concat(student.results);
+      }
+    });
+    
+    const average = allResults.length ? Math.round(allResults.reduce((sum, r) => sum + r.score, 0) / allResults.length) : 0;
+    elements.adminAverageScore.textContent = `${average}%`;
+  });
+
   elements.recentActivitiesList.innerHTML = '';
   if (!state.quizzes.length) {
     elements.recentActivitiesList.innerHTML = '<li>No quizzes available yet.</li>';
-    return;
+  } else {
+    state.quizzes.slice(-3).reverse().forEach(q => {
+      const li = document.createElement('li');
+      li.textContent = `Quiz "${q.title}" created.`;
+      elements.recentActivitiesList.appendChild(li);
+    });
   }
-  state.quizzes.slice(-3).reverse().forEach(q => {
-    const li = document.createElement('li');
-    li.textContent = `Quiz "${q.title}" created.`;
-    elements.recentActivitiesList.appendChild(li);
-  });
 }
 
 function renderManageQuizList() {
@@ -319,30 +305,43 @@ function renderManageQuizList() {
 }
 
 function renderManageStudentsList() {
-  elements.manageStudentsList.innerHTML = '';
-  const students = users.filter(u => u.role === 'student');
-  if (!students.length) {
-    elements.manageStudentsList.innerHTML = '<li>No students registered yet.</li>';
-    return;
-  }
-  students.forEach(student => {
-    const li = document.createElement('li');
-    li.textContent = `${student.name} — ${student.email}`;
-    elements.manageStudentsList.appendChild(li);
+  elements.manageStudentsList.innerHTML = '<li>Loading students...</li>';
+  loadAllStudents().then(students => {
+    elements.manageStudentsList.innerHTML = '';
+    if (!students.length) {
+      elements.manageStudentsList.innerHTML = '<li>No students registered yet.</li>';
+      return;
+    }
+    students.forEach(student => {
+      const li = document.createElement('li');
+      li.textContent = `${student.name || 'Student'} — ${student.email}`;
+      elements.manageStudentsList.appendChild(li);
+    });
   });
 }
 
 function renderAdminResultsList() {
-  elements.adminResultsList.innerHTML = '';
-  const results = users.filter(u => u.role === 'student').flatMap(u => (u.results || []).map(r => ({ name: u.name, ...r })));
-  if (!results.length) {
-    elements.adminResultsList.innerHTML = '<li>No student results available.</li>';
-    return;
-  }
-  results.forEach(result => {
-    const li = document.createElement('li');
-    li.textContent = `${result.name} — ${result.quizTitle} — ${result.score}%`;
-    elements.adminResultsList.appendChild(li);
+  elements.adminResultsList.innerHTML = '<li>Loading results...</li>';
+  loadAllStudents().then(students => {
+    elements.adminResultsList.innerHTML = '';
+    const results = [];
+    students.forEach(student => {
+      if (student.results) {
+        student.results.forEach(r => {
+          results.push({ name: student.name || 'Student', ...r });
+        });
+      }
+    });
+    
+    if (!results.length) {
+      elements.adminResultsList.innerHTML = '<li>No student results available.</li>';
+      return;
+    }
+    results.forEach(result => {
+      const li = document.createElement('li');
+      li.textContent = `${result.name} — ${result.quizTitle} — ${result.score}%`;
+      elements.adminResultsList.appendChild(li);
+    });
   });
 }
 
@@ -402,16 +401,17 @@ function renderQuizQuestion() {
   const question = state.activeQuiz.questions[state.activeQuestionIndex];
   elements.currentQuizTitle.textContent = state.activeQuiz.title;
   elements.questionNumber.textContent = `Q${state.activeQuestionIndex + 1}. ${question.text}`;
-  elements.questionPrompt.textContent = question.text;
   document.querySelectorAll('input[name="quizOption"]').forEach(input => {
     input.checked = false;
-    const label = input.closest('label');
-    if (label) label.style.backgroundColor = '';
   });
   const options = ['A', 'B', 'C', 'D'];
   options.forEach(option => {
-    const label = document.querySelector(`input[value="${option}"]`).closest('label');
-    if (label) label.lastChild.textContent = question.options[option];
+    const input = document.querySelector(`input[value="${option}"]`);
+    const label = input.closest('label');
+    if (label) {
+      const span = label.querySelector('span') || document.createTextNode('');
+      label.replaceChild(document.createTextNode(question.options[option]), span.length ? span : label.lastChild);
+    }
   });
 }
 
@@ -420,19 +420,84 @@ function submitQuiz() {
   const quiz = state.activeQuiz;
   const correctCount = state.answers.filter((choice, index) => choice === quiz.questions[index].answer).length;
   const score = Math.round((correctCount / quiz.questions.length) * 100);
-  state.currentUser.results = state.currentUser.results || [];
-  state.currentUser.results.push({ quizTitle: quiz.title, score, correct: correctCount, total: quiz.questions.length, timestamp: new Date().toLocaleString() });
+  
+  const result = {
+    quizTitle: quiz.title,
+    score,
+    correct: correctCount,
+    total: quiz.questions.length,
+    timestamp: new Date().toISOString()
+  };
+  
   state.lastAttempt = { quizTitle: quiz.title, questions: quiz.questions, answers: [...state.answers], score };
-  elements.finalScoreText.textContent = `${correctCount} / ${quiz.questions.length}`;
-  elements.finalPercentageText.textContent = `${score}%`;
-  elements.finalStatusText.textContent = score >= 50 ? 'PASS' : 'FAIL';
-  clearInterval(state.quizTimer);
-  showResultPage();
+  
+  // Save result to Firebase
+  if (state.currentUser && state.currentUser.uid) {
+    const userRef = db.collection('users').doc(state.currentUser.uid);
+    userRef.get().then(doc => {
+      const userData = doc.data();
+      const results = userData.results || [];
+      results.push(result);
+      return userRef.update({ results });
+    }).then(() => {
+      state.currentUser.results = state.currentUser.results || [];
+      state.currentUser.results.push(result);
+      
+      elements.finalScoreText.textContent = `${correctCount} / ${quiz.questions.length}`;
+      elements.finalPercentageText.textContent = `${score}%`;
+      elements.finalStatusText.textContent = score >= 50 ? 'PASS' : 'FAIL';
+      clearInterval(state.quizTimer);
+      showResultPage();
+    });
+  }
+}
+
+function loadAllStudents() {
+  return db.collection('users').where('role', '==', 'student').get().then(snapshot => {
+    const students = [];
+    snapshot.forEach(doc => {
+      students.push({ id: doc.id, ...doc.data() });
+    });
+    return students;
+  }).catch(error => {
+    console.error('Error loading students:', error);
+    return [];
+  });
+}
+
+function handleAuthStateChange() {
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      db.collection('users').doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          state.currentUser = { uid: user.uid, ...doc.data() };
+          if (state.currentUser.role === 'admin') {
+            showAdminDashboard();
+          } else {
+            showStudentDashboard();
+          }
+        }
+      });
+    } else {
+      state.currentUser = null;
+      showHome();
+    }
+  });
 }
 
 function init() {
-  state.quizzes = JSON.parse(JSON.stringify(defaultQuizzes));
-  showHome();
+  // Load quizzes from Firestore
+  db.collection('quizzes').get().then(snapshot => {
+    state.quizzes = [];
+    snapshot.forEach(doc => {
+      state.quizzes.push({ id: doc.id, ...doc.data() });
+    });
+  }).catch(error => {
+    console.error('Error loading quizzes:', error);
+  });
+
+  handleAuthStateChange();
+
   elements.navHomeBtn.addEventListener('click', showHome);
   elements.navLoginBtn.addEventListener('click', showLogin);
   elements.navRegisterBtn.addEventListener('click', showRegister);
@@ -466,22 +531,36 @@ function init() {
   elements.reviewAnswersBtn.addEventListener('click', showReviewPage);
   elements.reviewAnswersBtn2.addEventListener('click', showReviewPage);
   elements.backToResultFromReviewBtn.addEventListener('click', showResultPage);
+
   elements.quizForm.addEventListener('submit', e => {
     e.preventDefault();
     const title = document.getElementById('quizTitle').value.trim();
     const subject = document.getElementById('quizSubject').value.trim();
     const timeLimit = Number(document.getElementById('quizTimeLimit').value);
     const marks = Number(document.getElementById('quizMarks').value);
+    
     if (!title || !subject || !timeLimit || !marks) {
       alert('Please complete all quiz details.');
       return;
     }
-    const newQuiz = { title, subject, timeLimit, marks, questions: [] };
-    state.quizzes.push(newQuiz);
-    state.activeQuiz = newQuiz;
-    alert('Quiz created. Add questions now.');
-    showAddQuestion();
+    
+    const newQuiz = { title, subject, timeLimit, marks, questions: [], createdBy: state.currentUser.uid, createdAt: new Date().toISOString() };
+    db.collection('quizzes').add(newQuiz).then(docRef => {
+      newQuiz.id = docRef.id;
+      state.quizzes.push(newQuiz);
+      state.activeQuiz = newQuiz;
+      e.target.reset();
+      document.getElementById('quizTitle').value = '';
+      document.getElementById('quizSubject').value = '';
+      document.getElementById('quizTimeLimit').value = '';
+      document.getElementById('quizMarks').value = '';
+      alert('Quiz created. Add questions now.');
+      showAddQuestion();
+    }).catch(error => {
+      alert('Error creating quiz: ' + error.message);
+    });
   });
+
   elements.questionForm.addEventListener('submit', e => {
     e.preventDefault();
     const questionText = document.getElementById('questionText').value.trim();
@@ -490,14 +569,32 @@ function init() {
     const optionC = document.getElementById('optionC').value.trim();
     const optionD = document.getElementById('optionD').value.trim();
     const answer = document.getElementById('correctAnswer').value;
+    
     if (!questionText || !optionA || !optionB || !optionC || !optionD || !answer) {
       alert('Please complete the question and choose the correct answer.');
       return;
     }
-    state.activeQuiz.questions.push({ text: questionText, options: { A: optionA, B: optionB, C: optionC, D: optionD }, answer });
-    e.target.reset();
-    alert('Question saved. You can add more or return to admin dashboard.');
+    
+    state.activeQuiz.questions.push({
+      text: questionText,
+      options: { A: optionA, B: optionB, C: optionC, D: optionD },
+      answer
+    });
+    
+    db.collection('quizzes').doc(state.activeQuiz.id).update({ questions: state.activeQuiz.questions }).then(() => {
+      e.target.reset();
+      document.getElementById('questionText').value = '';
+      document.getElementById('optionA').value = '';
+      document.getElementById('optionB').value = '';
+      document.getElementById('optionC').value = '';
+      document.getElementById('optionD').value = '';
+      document.getElementById('correctAnswer').value = '';
+      alert('Question saved. You can add more or return to admin dashboard.');
+    }).catch(error => {
+      alert('Error saving question: ' + error.message);
+    });
   });
+
   elements.nextQuestionBtn.addEventListener('click', () => {
     const selected = document.querySelector('input[name="quizOption"]:checked');
     if (!selected) {
@@ -512,23 +609,40 @@ function init() {
     }
     renderQuizQuestion();
   });
-  document.getElementById('forgotPasswordBtn').addEventListener('click', () => alert('Forgot password is not available in this demo.'));
+
+  document.getElementById('forgotPasswordBtn').addEventListener('click', () => {
+    alert('Forgot password is not available in this demo.');
+  });
+
   document.getElementById('loginForm').addEventListener('submit', e => {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
+    
     if (!email || !password) {
       alert('Email and password are required.');
       return;
     }
-    const user = users.find(u => u.email === email && u.password === password);
-    if (!user) {
-      alert('Invalid email or password.');
-      return;
-    }
-    state.currentUser = user;
-    if (user.role === 'admin') showAdminDashboard(); else showStudentDashboard();
+    
+    auth.signInWithEmailAndPassword(email, password)
+      .then(userCredential => {
+        db.collection('users').doc(userCredential.user.uid).get().then(doc => {
+          if (doc.exists) {
+            state.currentUser = { uid: userCredential.user.uid, ...doc.data() };
+            document.getElementById('loginForm').reset();
+            if (state.currentUser.role === 'admin') {
+              showAdminDashboard();
+            } else {
+              showStudentDashboard();
+            }
+          }
+        });
+      })
+      .catch(error => {
+        alert('Login failed: ' + error.message);
+      });
   });
+
   document.getElementById('registerForm').addEventListener('submit', e => {
     e.preventDefault();
     const name = document.getElementById('registerName').value.trim();
@@ -536,31 +650,49 @@ function init() {
     const password = document.getElementById('registerPassword').value;
     const confirmPassword = document.getElementById('registerConfirmPassword').value;
     const role = document.querySelector('input[name="role"]:checked').value;
+    
     if (name.length < 3) {
       alert('Name must be at least 3 characters.');
       return;
     }
+    
     if (!validateEmail(email)) {
       alert('Please enter a valid email address.');
       return;
     }
+    
     if (password.length < 6) {
       alert('Password must be at least 6 characters.');
       return;
     }
+    
     if (password !== confirmPassword) {
       alert('Passwords do not match.');
       return;
     }
-    if (users.some(u => u.email === email)) {
-      alert('Email already exists. Please use another email.');
-      return;
-    }
-    const newUser = { name, email, password, role, results: [], joined: new Date().getFullYear().toString() };
-    users.push(newUser);
-    state.currentUser = newUser;
-    alert('Registration successful!');
-    if (role === 'admin') showAdminDashboard(); else showStudentDashboard();
+    
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(userCredential => {
+        const newUser = {
+          name,
+          email,
+          role,
+          results: [],
+          createdAt: new Date().toISOString()
+        };
+        return db.collection('users').doc(userCredential.user.uid).set(newUser).then(() => {
+          state.currentUser = { uid: userCredential.user.uid, ...newUser };
+          document.getElementById('registerForm').reset();
+          if (role === 'admin') {
+            showAdminDashboard();
+          } else {
+            showStudentDashboard();
+          }
+        });
+      })
+      .catch(error => {
+        alert('Registration failed: ' + error.message);
+      });
   });
 }
 
