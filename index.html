@@ -1,0 +1,325 @@
+﻿<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Quiz Management System</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="logo">QuizPortal</div>
+      <nav class="top-nav">
+        <button id="navHomeBtn">Home</button>
+        <button id="navLoginBtn">Login</button>
+        <button id="navRegisterBtn">Register</button>
+      </nav>
+    </header>
+
+    <main class="page-wrapper">
+      <section id="homePage" class="page active">
+        <div class="hero-section">
+          <div class="hero-copy">
+            <div class="brand-label">ONLINE QUIZ MANAGEMENT SYSTEM</div>
+            <h1>Student quiz platform for campus practice and results tracking.</h1>
+            <p>Login or register to attempt quizzes, review scores, and manage quiz content from the admin dashboard.</p>
+            <div class="hero-actions">
+              <button class="primary-btn" id="getStartedBtn">Get Started</button>
+              <button class="secondary-btn" id="learnMoreBtn">Learn More</button>
+            </div>
+          </div>
+          <div class="hero-features">
+            <div class="feature-card">
+              <span class="feature-icon">⏱</span>
+              <strong>Timer Based Quiz</strong>
+              <p>Give students timed quizzes that simulate exam pressure.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-icon">✅</span>
+              <strong>Instant Results</strong>
+              <p>Show score and pass/fail status immediately after submission.</p>
+            </div>
+            <div class="feature-card">
+              <span class="feature-icon">📊</span>
+              <strong>Performance Tracking</strong>
+              <p>Track student attempts with dashboard summaries and history.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="loginPage" class="page">
+        <div class="page-card">
+          <div class="card-head">
+            <button class="back-btn" id="loginBackBtn">←</button>
+            <h2>LOGIN</h2>
+          </div>
+          <form id="loginForm" class="card-form">
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="Enter your email" required />
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="Enter your password" required />
+            <div class="form-row spaced-row">
+              <label class="checkbox-label"><input type="checkbox" id="rememberMe" /> Remember me</label>
+              <button type="button" class="link-button" id="forgotPasswordBtn">Forgot Password?</button>
+            </div>
+            <button type="submit" class="primary-btn">LOGIN</button>
+            <p class="small-text">Don't have an account? <button type="button" class="link-button" id="switchToRegisterBtn">Register</button></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="registerPage" class="page">
+        <div class="page-card">
+          <div class="card-head">
+            <button class="back-btn" id="registerBackBtn">←</button>
+            <h2>REGISTER</h2>
+          </div>
+          <form id="registerForm" class="card-form">
+            <label>Name</label>
+            <input type="text" id="registerName" placeholder="Enter your name" required />
+            <label>Email</label>
+            <input type="email" id="registerEmail" placeholder="Enter your email" required />
+            <label>Password</label>
+            <input type="password" id="registerPassword" placeholder="Enter your password" required />
+            <label>Confirm Password</label>
+            <input type="password" id="registerConfirmPassword" placeholder="Confirm your password" required />
+            <div class="form-row role-row">
+              <label><input type="radio" name="role" value="student" checked /> Student</label>
+              <label><input type="radio" name="role" value="admin" /> Admin</label>
+            </div>
+            <button type="submit" class="primary-btn">REGISTER</button>
+            <p class="small-text">Already have an account? <button type="button" class="link-button" id="switchToLoginBtn">Login</button></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="studentDashboardPage" class="page">
+        <div class="dashboard-layout">
+          <aside class="sidebar-menu">
+            <div class="menu-heading">Student Menu</div>
+            <button class="menu-item" id="studentDashboardBtn">Dashboard</button>
+            <button class="menu-item" id="studentAttemptBtn">Attempt Quiz</button>
+            <button class="menu-item" id="studentResultsBtn">My Results</button>
+            <button class="menu-item" id="studentLeaderboardBtn">Leaderboard</button>
+            <button class="menu-item" id="studentProfileBtn">Profile</button>
+            <button class="menu-item" id="studentLogoutBtn">Logout</button>
+          </aside>
+          <div class="dashboard-content">
+            <div class="welcome-panel">
+              <div>
+                <div class="panel-subtitle">Welcome, Student</div>
+                <h2 id="studentNameLabel">Student</h2>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-card"><strong id="totalQuizCount">0</strong><span>Total Quiz</span></div>
+              <div class="stat-card"><strong id="attemptedCount">0</strong><span>Attempted</span></div>
+              <div class="stat-card"><strong id="averageScore">0%</strong><span>Average Score</span></div>
+            </div>
+            <div class="card info-card">
+              <h3>Recent Quiz Scores</h3>
+              <ul id="recentScoresList" class="item-list"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="studentResultsPage" class="page">
+        <div class="card-page">
+          <button class="back-btn" id="backToStudentDashboardBtn">← Back</button>
+          <h2>RESULT</h2>
+          <div class="result-summary">
+            <div><span>Your Score</span><strong id="finalScore">0 / 0</strong></div>
+            <div><span>Percentage</span><strong id="finalPercentage">0%</strong></div>
+            <div><span>Status</span><strong id="finalStatus">PASS</strong></div>
+          </div>
+          <button class="secondary-btn" id="reviewAnswersBtn">Review Answers</button>
+          <button class="primary-btn" id="backToDashboardFromResultBtn">Back to Dashboard</button>
+          <div class="history-card">
+            <h3>Score History</h3>
+            <ul id="resultsHistoryList" class="item-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="studentProfilePage" class="page">
+        <div class="card-page">
+          <button class="back-btn" id="backToDashboardFromProfileBtn">← Back</button>
+          <h2>Profile</h2>
+          <div class="profile-grid">
+            <div class="profile-card"><span>Name</span><strong id="profileName">Student</strong></div>
+            <div class="profile-card"><span>Email</span><strong id="profileEmail">student@example.com</strong></div>
+            <div class="profile-card"><span>Role</span><strong>Student</strong></div>
+            <div class="profile-card"><span>Member Since</span><strong id="profileSince">2024</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="adminDashboardPage" class="page">
+        <div class="dashboard-layout">
+          <aside class="sidebar-menu">
+            <div class="menu-heading">Admin Menu</div>
+            <button class="menu-item" id="adminDashboardBtn">Dashboard</button>
+            <button class="menu-item" id="createQuizNavBtn">Create Quiz</button>
+            <button class="menu-item" id="manageQuestionsNavBtn">Manage Questions</button>
+            <button class="menu-item" id="viewResultsNavBtn">View Results</button>
+            <button class="menu-item" id="manageStudentsNavBtn">Manage Students</button>
+            <button class="menu-item" id="adminLogoutBtn">Logout</button>
+          </aside>
+          <div class="dashboard-content">
+            <div class="welcome-panel">
+              <div>
+                <div class="panel-subtitle">Welcome, Admin</div>
+                <h2>Admin</h2>
+              </div>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-card"><strong id="totalStudents">0</strong><span>Total Students</span></div>
+              <div class="stat-card"><strong id="totalQuizzes">0</strong><span>Total Quizzes</span></div>
+              <div class="stat-card"><strong id="adminAverageScore">0%</strong><span>Average Score</span></div>
+            </div>
+            <div class="card info-card">
+              <h3>Recent Activities</h3>
+              <ul id="recentActivitiesList" class="item-list"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="createQuizPage" class="page">
+        <div class="card-page">
+          <button class="back-btn" id="backToAdminBtn">← Back</button>
+          <h2>Create Quiz</h2>
+          <form id="quizForm" class="card-form">
+            <label>Quiz Title</label>
+            <input type="text" id="quizTitle" placeholder="Enter quiz title" required />
+            <label>Subject</label>
+            <input type="text" id="quizSubject" placeholder="Enter subject" required />
+            <label>Time Limit (minutes)</label>
+            <input type="number" id="quizTimeLimit" min="1" placeholder="Enter time limit" required />
+            <label>Total Marks</label>
+            <input type="number" id="quizMarks" min="1" placeholder="Enter total marks" required />
+            <button type="submit" class="primary-btn">ADD QUESTIONS</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="addQuestionPage" class="page">
+        <div class="card-page">
+          <button class="back-btn" id="backToCreateQuizBtn">← Back</button>
+          <h2>Add Question</h2>
+          <form id="questionForm" class="card-form">
+            <label>Question</label>
+            <textarea id="questionText" placeholder="Enter your question" required></textarea>
+            <label>Option A</label>
+            <input type="text" id="optionA" placeholder="Enter option A" required />
+            <label>Option B</label>
+            <input type="text" id="optionB" placeholder="Enter option B" required />
+            <label>Option C</label>
+            <input type="text" id="optionC" placeholder="Enter option C" required />
+            <label>Option D</label>
+            <input type="text" id="optionD" placeholder="Enter option D" required />
+            <label>Correct Answer</label>
+            <select id="correctAnswer" required>
+              <option value="">Select correct answer</option>
+              <option value="A">Option A</option>
+              <option value="B">Option B</option>
+              <option value="C">Option C</option>
+              <option value="D">Option D</option>
+            </select>
+            <button type="submit" class="primary-btn">SAVE QUESTION</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="manageQuestionsPage" class="page">
+        <div class="card-page">
+          <button class="back-btn" id="backToAdminFromManageBtn">← Back</button>
+          <h2>Manage Questions</h2>
+          <div class="info-card">
+            <h3>Quiz Questions</h3>
+            <ul id="manageQuizList" class="item-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="manageStudentsPage" class="page">
+        <div class="card-page">
+          <button class="back-btn" id="backToAdminFromStudentsBtn">← Back</button>
+          <h2>Manage Students</h2>
+          <div class="info-card">
+            <h3>Student List</h3>
+            <ul id="manageStudentsList" class="item-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="adminResultsPage" class="page">
+        <div class="card-page">
+          <button class="back-btn" id="backToAdminFromResultsBtn">← Back</button>
+          <h2>Student Results</h2>
+          <div class="info-card">
+            <h3>All Results</h3>
+            <ul id="adminResultsList" class="item-list"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="quizAttemptPage" class="page">
+        <div class="card-page">
+          <div class="card-head">
+            <button class="back-btn" id="backToStudentFromAttemptBtn">←</button>
+            <h2>Quiz Attempt</h2>
+          </div>
+          <div class="quiz-header">
+            <div>
+              <div class="panel-subtitle">Quiz</div>
+              <h3 id="currentQuizTitle">HTML Basics</h3>
+            </div>
+            <div class="timer-box">Time Left<br /><strong id="quizTimer">09:45</strong></div>
+          </div>
+          <div class="question-block">
+            <p class="question-label" id="questionNumber">Q1. What does HTML stand for?</p>
+            <div class="options-list">
+              <label><input type="radio" name="quizOption" value="A" /> Hyper Text Markup Language</label>
+              <label><input type="radio" name="quizOption" value="B" /> Hyperlinks and Text Markup Language</label>
+              <label><input type="radio" name="quizOption" value="C" /> Home Tool Markup Language</label>
+              <label><input type="radio" name="quizOption" value="D" /> Hyper Text Makeup Language</label>
+            </div>
+          </div>
+          <button class="primary-btn" id="nextQuestionBtn">NEXT</button>
+        </div>
+      </section>
+
+      <section id="resultPage" class="page">
+        <div class="card-page">
+          <h2>RESULT</h2>
+          <div class="result-block">
+            <div class="result-icon">✓</div>
+            <div class="result-details">
+              <p>Your Score</p>
+              <strong id="finalScoreText">8 / 10</strong>
+            </div>
+          </div>
+          <div class="result-info-grid">
+            <div><span>Percentage</span><strong id="finalPercentageText">80%</strong></div>
+            <div><span>Status</span><strong id="finalStatusText">PASS</strong></div>
+          </div>
+          <button class="secondary-btn" id="reviewAnswersBtn2">REVIEW ANSWERS</button>
+          <button class="primary-btn" id="backToDashboardFromResultBtn2">BACK TO DASHBOARD</button>
+        </div>
+      </section>
+
+      <section id="reviewPage" class="page">
+        <div class="card-page">
+          <button class="back-btn" id="backToResultFromReviewBtn">← Back</button>
+          <h2>Review Answers</h2>
+          <div id="reviewList" class="review-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
